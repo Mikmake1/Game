@@ -1,0 +1,153 @@
+# Разработай свою игру в этом файле!
+from pygame import*
+from random import randint
+font.init()
+
+mw = display.set_mode((700,500))
+display.set_caption('Adventures of a hero')
+BG = transform.scale(image.load('WallFon.png'), (700, 500))
+win = font.SysFont('Verdana', 45).render('Ты дошёл до цели!', True, (30,220, 40))
+loose = font.SysFont('Times New Roman', 50).render('Рыцарь проиграл!', True, (220,30,40))
+#'lost = font.SysFont('Comic Sans', 45).render()'__надпись дополнительного объекта
+clock = time.Clock()
+surf = Surface((700, 500))
+
+class GameSprite(sprite.Sprite):
+    def __init__(self, x, y, w, h, filename):
+        super().__init__()
+        self.image = transform.scale(image.load(filename), (w,h))
+        self.rect = self.image.get_rect()
+        self.rect.x = x
+        self.rect.y = y
+    def reset(self):
+        mw.blit(self.image, (self.rect.x, self.rect.y))
+        self.rect.clamp_ip(surf.get_rect())
+class Player(GameSprite):
+    def __init__(self, x, y, w, h, filename, speed):
+        GameSprite. __init__(self, x, y, w, h, filename)
+        self.speed_x = speed
+        self.speed_y = speed
+    def update(self):
+        self.rect.x += self.speed_x
+        self.rect.y += self.speed_y
+        walls_touch = sprite.spritecollide(self, walls, False)
+        for wall in walls_touch:
+            if self.speed_x > 0:
+                self.rect.right = min(self.rect.right, wall.rect.left)
+            elif self.speed_x < 0:
+                self.rect.left = max(self.rect.left, wall.rect.right)
+            if self.speed_y < 0:
+                self.rect.top = max(self.rect.top, wall.rect.bottom)
+            elif self.speed_y > 0:
+                self.rect.bottom = min(self.rect.bottom, wall.rect.top)
+    def fire(self):
+        bullets.add(Bullet(self.rect.right, self.rect.centery, 35, 9, 'fireball.png', 5))
+class FOE(GameSprite):
+    def __init__(self, x, y, w, h, filename, speed, x1, x2, y1=0, y2=0):
+        GameSprite.__init__(self, x, y, w, h, filename)
+        self.x1 = x1
+        self.x2 = x2
+        self.y1 = y1
+        self.y2 = y2
+        self.speed = speed
+        self.direction = 'left'
+    def update(self):
+        if self.x1 == 0 and self.x2 == 0:
+            if self.rect.y <= self.y1:
+                self.direction = 'right'
+            elif self.rect.y >= self.y2:
+                self.direction = 'left'
+            if self.direction == 'left':
+                self.rect.y -= self.speed
+            else:
+                self.rect.y += self.speed
+        if self.y1 == 0 and self.y2 ==0:
+            if self.rect.x <= self.x1:
+                self.direction = 'right'
+            elif self.rect.x >= self.x2:
+                self.direction = 'left'
+            if self.direction == 'left':
+                self.rect.x -= self.speed
+            else:
+                self.rect.x += self.speed
+class Bullet(GameSprite):
+    def __init__(self, x, y, w, h, filename, speed):
+        GameSprite.__init__(self, x, y, w, h, filename)        
+        self.speed = speed
+    def update(self):
+        self.rect.x += self.speed
+        if self.rect.x >= 700:
+            self.kill()
+walls = sprite.Group()
+foes = sprite.Group()
+bullets = sprite.Group()
+walls.add(GameSprite(60, 415, 24, 85, 'VertWall.png'))
+walls.add(GameSprite(60, 391, 98, 24, 'HorizWall.jpg'))
+walls.add(GameSprite(60, 291, 98, 24, 'HorizWall.jpg'))
+walls.add(GameSprite(135, 221, 24, 90, 'VertWall.png'))
+walls.add(GameSprite(136, 199, 98, 24, 'HorizWall.jpg'))
+walls.add(GameSprite(136, 100, 98, 24, 'HorizWall.jpg'))
+walls.add(GameSprite(230, 38, 24, 85, 'VertWall.png'))
+walls.add(GameSprite(250, 300, 24, 200, 'VertWall.png'))
+walls.add(GameSprite(360, 130, 24, 500, 'VertWall.png'))
+walls.add(GameSprite(460, 4, 24, 370, 'VertWall.png'))
+walls.add(GameSprite(600, 150, 24, 370, 'VertWall.png'))
+goal = GameSprite(630, 430, 70, 70, 'door.png')
+man = Player(10, 445, 40, 52, 'knight.png', 10)
+foes.add(FOE(190, 50, 50, 50, 'foe.png', 3, 250, 400))
+foes.add(FOE(450, 400, 50, 50, 'foe.png', 3, 400, 470))
+foes.add(FOE(150, 150, 50, 50, 'foe.png', 3, 100, 300))
+foes.add(FOE(10, 12, 50, 50, 'foe.png', 3, 0, 0, 20, 280))
+foes.add(FOE(500, 120, 70, 70, 'foe.png', 3, 0, 0, 20, 370))
+
+
+run = True
+finish = False
+
+
+while run:
+    for e in event.get():
+        if e.type == QUIT:
+            run = False
+        if e.type == KEYDOWN:
+            if e.key == K_w:
+                man.speed_y = -5
+            elif e.key == K_s:
+                man.speed_y = 3
+            elif e.key == K_d:
+                man.speed_x = 3
+            elif e.key == K_a:
+                man.speed_x = -5
+            elif e.key == K_SPACE:
+                man.fire()
+        if e.type == KEYUP:
+            if e.key == K_w:
+                man.speed_y = 0
+            elif e.key == K_s:
+                man.speed_y = 0
+            elif e.key == K_d:
+                man.speed_x = 0
+            elif e.key == K_a:
+                man.speed_x = 0
+    if not finish:
+        mw.blit(BG, (0,0))
+        bullets.draw(mw)
+        bullets.update()
+        man.reset()
+        man.update()
+        goal.reset()
+        foes.draw(mw)
+        foes.update()
+        walls.draw(mw)      
+        if sprite.collide_rect(man, goal):
+            finish = True
+            mw.blit(win, (30,30))
+        if sprite.spritecollide(man, foes, False):
+            finish = True
+            mw.blit(loose, (30, 30))
+        sprite.groupcollide(bullets, walls, True, False)
+        sprite.groupcollide(bullets, foes, True, True)
+        
+        
+    display.update()
+    clock.tick(60)
